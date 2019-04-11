@@ -1,6 +1,7 @@
 package com.example.coolweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -35,21 +36,21 @@ public class ChooseAreaFragment extends Fragment {
     public static final int LEVEL_CITY=1;
     public static final int LEVEL_COUNTY=2;
 
-    private ProgressDialog mProgressDialog;
+    private ProgressDialog progressDialog;
     private TextView titleText;
     private Button backButton;
-    private ListView mListView;
-    private ArrayAdapter<String> mAdapter;
+    private ListView listView;
+    private ArrayAdapter<String> adapter;
     private List<String> datalist=new ArrayList<>();
 
     //省列表
-    private List<Province> mProvinceList;
+    private List<Province> provinceList;
 
     //市列表
-    private List<City> mCityList;
+    private List<City> cityList;
 
     //县列表
-    private List<County> mCountyList;
+    private List<County> countyList;
 
     //选中的省份
     private Province selectedProvince;
@@ -66,24 +67,30 @@ public class ChooseAreaFragment extends Fragment {
         View view = inflater.inflate(R.layout.choose_area,container,false);
         titleText=(TextView)view.findViewById(R.id.title_text);
         backButton=(Button)view.findViewById(R.id.back_button);
-        mListView=(ListView)view.findViewById(R.id.list_view);
-        mAdapter=new ArrayAdapter<>(getContext(),android.R.layout.simple_list_item_1,datalist);
-        mListView.setAdapter(mAdapter);
+        listView=(ListView)view.findViewById(R.id.list_view);
+        adapter=new ArrayAdapter<>(getContext(),android.R.layout.simple_list_item_1,datalist);
+        listView.setAdapter(adapter);
         return view;
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState){
         super.onActivityCreated(savedInstanceState);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if(currentLevel==LEVEL_PROVINCE){
-                    selectedProvince=mProvinceList.get(position);
+                    selectedProvince=provinceList.get(position);
                     queryCities();
                 }else if(currentLevel==LEVEL_CITY){
-                    selectedCity=mCityList.get(position);
+                    selectedCity=cityList.get(position);
                     queryCounties();
+                }else if (currentLevel==LEVEL_COUNTY){
+                    String weatherId=countyList.get(position).getWeatherId();
+                    Intent intent=new Intent(getActivity(),WeatherActivity.class);
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -104,14 +111,14 @@ public class ChooseAreaFragment extends Fragment {
     private void queryProvinces(){
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
-        mProvinceList= DataSupport.findAll(Province.class);
-        if (mProvinceList.size()>0){
+        provinceList= DataSupport.findAll(Province.class);
+        if (provinceList.size()>0){
             datalist.clear();
-            for (Province province:mProvinceList){
+            for (Province province:provinceList){
                 datalist.add(province.getProvinceName());
             }
-            mAdapter.notifyDataSetChanged();
-            mListView.setSelection(0);
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
             currentLevel=LEVEL_PROVINCE;
         }else {
             String address="http://guolin.tech/api/china";
@@ -123,14 +130,14 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCities(){
         titleText.setText(selectedProvince.getProvinceName());
         backButton.setVisibility(View.VISIBLE);
-        mCityList=DataSupport.where("provinceid=?",String.valueOf(selectedProvince.getId())).find(City.class);
-        if(mCityList.size()>0){
+        cityList=DataSupport.where("provinceid=?",String.valueOf(selectedProvince.getId())).find(City.class);
+        if(cityList.size()>0){
             datalist.clear();
-            for (City city :mCityList){
+            for (City city :cityList){
                 datalist.add(city.getCityName());
             }
-            mAdapter.notifyDataSetChanged();
-            mListView.setSelection(0);
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
             currentLevel=LEVEL_CITY;
         }else {
             int provinceCode=selectedProvince.getProvinceCode();
@@ -143,14 +150,14 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCounties(){
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
-        mCountyList=DataSupport.where("cityid=?",String.valueOf(selectedCity.getId())).find(County.class);
-        if(mCountyList.size()>0){
+        countyList=DataSupport.where("cityid=?",String.valueOf(selectedCity.getId())).find(County.class);
+        if(countyList.size()>0){
             datalist.clear();
-            for (County county:mCountyList){
+            for (County county:countyList){
                 datalist.add(county.getCountyName());
             }
-            mAdapter.notifyDataSetChanged();
-            mListView.setSelection(0);
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
             currentLevel=LEVEL_COUNTY;
         }else{
             int provinceCode=selectedProvince.getProvinceCode();
@@ -212,19 +219,19 @@ public class ChooseAreaFragment extends Fragment {
 
     /*显示进度对话框*/
     private void showProgressDialog(){
-        if (mProgressDialog==null){
-            mProgressDialog=new ProgressDialog(getActivity());
-            mProgressDialog.setMessage("正在加载...");
-            mProgressDialog.setCanceledOnTouchOutside(false);
+        if (progressDialog==null){
+            progressDialog=new ProgressDialog(getActivity());
+            progressDialog.setMessage("正在加载...");
+            progressDialog.setCanceledOnTouchOutside(false);
         }
-        mProgressDialog.show();
+        progressDialog.show();
 
     }
 
     /*关闭进度对话框*/
     private void closeProgressDialog(){
-        if(mProgressDialog!=null){
-            mProgressDialog.dismiss();
+        if(progressDialog!=null){
+            progressDialog.dismiss();
         }
     }
 
